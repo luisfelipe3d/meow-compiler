@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
- * @author internship
+ * @author luisfelipe3d
  */
 public class MainTest {
     
@@ -56,6 +56,14 @@ public class MainTest {
         String EXPECTED = "Hello, World!";
         String GOT = "Hello, World!";
         assertEquals(EXPECTED, GOT);
+    }
+
+    /**
+     * Test args passed to main class.
+     */
+
+    @Test
+    public void testArgsMain(){
     }
     
 }
