@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 liraline
  * Copyright (C) 2022 luisfelipe3d
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package br.unicap.meow.compiler;
 
-/**
- *
- * @author luisfelipe3d
- */
+import br.unicap.meow.compiler.model.Token;
+import br.unicap.meow.compiler.controller.Compiler;
+
 public class Main {
     public static void main(String[] args) {
         System.out.println("Hello, world");
@@ -30,6 +31,12 @@ public class Main {
             for (String string : args) {
                 System.out.println(string);
             }
+        }
+
+        Compiler comp = new Compiler("src\\main\\java\\br\\unicap\\meow\\compiler\\controller\\code.txt");
+        Token token = null;
+        while ((token = comp.getToken()) != null) {
+            System.out.println("Lexeme: " + token.getLexeme() + "\nType: " + token.getType());
         }
     }
 }
