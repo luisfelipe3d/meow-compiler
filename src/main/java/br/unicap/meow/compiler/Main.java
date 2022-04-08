@@ -24,25 +24,16 @@ import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello, world");
-        
-        if( args.length == 0){
-            System.out.println("Sem argumentos");
-        } else {
-            for (String string : args) {
-                System.out.println(string);
-            }
-        }
-
-        
-        String filePath = "src"+File.separator+"main"+File.separator+
+        String filePath = "src" + File.separator + "main" + File.separator+
                 "java"+File.separator+"br"+File.separator+
                 "unicap"+File.separator+"meow"+File.separator+
                 "compiler"+File.separator+"controller"+File.separator+"code.txt";
+
         Compiler comp = new Compiler(filePath);
         Token token = null;
         while ((token = comp.getToken()) != null) {
             System.out.println("Lexeme: " + token.getLexeme() + "\nType: " + token.getType());
+            System.out.println();
         }
     }
 }

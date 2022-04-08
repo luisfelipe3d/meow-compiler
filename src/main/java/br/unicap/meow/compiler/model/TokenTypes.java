@@ -18,22 +18,22 @@ package br.unicap.meow.compiler.model;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-public enum Type {
-    INTEGER(0),
-    REAL(1),
-    CHAR(2),
-    IDENTIFIER(3),
-    RELATIONAL_OPERATOR(4),
-    ARITHMETIC_OPERATOR(5), 
-    SPECIAL_CHARACTER(6),
-    RESERVED_WORD(7),
-    ASSIGNMENT_OPERATOR(8),
-    SPECIAL_OPERATOR(9),
-    CODE_END(99);
+public enum TokenTypes {
+    IDENTIFIER("1 - Identifier"),
+    INTEGER("2 - Integer"),
+    REAL("4 - Float"),
+    SPECIAL_CHARACTER("5 - Special Character"),
+    ARITHMETIC_OPERATOR("6 - Arithmetic Operator"), 
+    ASSIGNMENT_OPERATOR("7 - Assignment Operator"),
+    RELATIONAL_OPERATOR("8/9 - Relational Operator"),
+    RESERVED_WORD("11 - Reserved Word"),
+    SPECIAL_OPERATOR("14 - Special Operator"),
+    CHAR("17 - Char"),
+    CODE_END("99 - End of Code");
 
-    public final int typeCode;
+    public final String typeCode;
 
-    private Type (int typeCode) {
+    private TokenTypes (String typeCode) {
         this.typeCode = typeCode;
     }
 }
