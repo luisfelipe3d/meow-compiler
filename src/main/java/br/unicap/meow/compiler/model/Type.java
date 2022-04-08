@@ -27,7 +27,9 @@ public enum Type {
     ARITHMETIC_OPERATOR(5), 
     SPECIAL_CHARACTER(6),
     RESERVED_WORD(7),
-    CODE_END(8);
+    ASSIGNMENT_OPERATOR(8),
+    SPECIAL_OPERATOR(9),
+    CODE_END(99);
 
     public final int typeCode;
 

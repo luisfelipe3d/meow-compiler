@@ -38,9 +38,16 @@ import br.unicap.meow.compiler.model.Type;
 public class Compiler {
     private final int INITIAL_STATE = 0;
     private final int INVALID_DESTINATION_STATE = -1;
+    private final int ASSIGNMENT_OPERATOR_STATE = 7;
+    private final int BASIC_RELATIONAL_OPERATOR_STATE = 8;
 
-    private static final char UNDERLINE = '_';
+    private static final char DOLLAR_SIGN = '$';
     private static final char POINT = '.';
+    private static final char UNDERLINE = '_';
+    private static final char CIRCUMFLEX = '^'; 
+    private static final char MINUS_SIGN = '-';
+    private static final char SINGLE_QUOTE = '\'';
+    private static final char NEGATION_OPERATOR = '!';
     private static final char ASSIGNMENT_OPERATOR = '=';
     private static final List<Character> RELATIONAL_OPERATORS = Arrays.asList('<', '>');
     private static final List<Character> ARITHMETIC_OPERATORS = Arrays.asList('+', '-', '/', '*');
@@ -89,8 +96,13 @@ public class Compiler {
                     break;
 
                 case 1:
-                    if ((currentAutomatonState = whenOnFirstState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    if ((currentAutomatonState = whenOn1stState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                         lexeme.append(currentCharacter);
+
+                        if (isReservedWord(lexeme.toString())) {
+                            currentAutomatonState = 11;
+                        }
+
                         break;
                     } else {
                         goBackAnIndex();
@@ -98,7 +110,7 @@ public class Compiler {
                     }
 
                 case 2:
-                    if ((currentAutomatonState = whenOnSecondState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    if ((currentAutomatonState = whenOn2ndState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
@@ -107,7 +119,7 @@ public class Compiler {
                     }
 
                 case 3:
-                    if ((currentAutomatonState = whenOnThirdState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    if ((currentAutomatonState = whenOn3rdState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
@@ -115,7 +127,7 @@ public class Compiler {
                     }
 
                 case 4:
-                    if ((currentAutomatonState = whenOnFourthState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    if ((currentAutomatonState = whenOn4thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
@@ -124,14 +136,105 @@ public class Compiler {
                     }
 
                 case 5:
-                    if ((currentAutomatonState = whenOnFithState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    goBackAnIndex();
+                    return new Token(Type.SPECIAL_CHARACTER.typeCode, lexeme.toString());
+
+                case 6:
+                    goBackAnIndex();
+                    return new Token(Type.ARITHMETIC_OPERATOR.typeCode, lexeme.toString());
+
+                case 7:
+                    if ((currentAutomatonState = whenOn7thState(currentCharacter)) == ASSIGNMENT_OPERATOR_STATE) {
+                        goBackAnIndex();
+                        return new Token(Type.ASSIGNMENT_OPERATOR.typeCode, lexeme.toString());
+                    }
+
+                    lexeme.append(currentCharacter);
+                    break;                    
+
+                case 8:
+                    if ((currentAutomatonState = whenOn8thState(currentCharacter)) == BASIC_RELATIONAL_OPERATOR_STATE) {
+                        goBackAnIndex();
+                        return new Token(Type.RELATIONAL_OPERATOR.typeCode, lexeme.toString());                        
+                    }
+
+                    lexeme.append(currentCharacter);
+                    break;                    
+                    
+                case 9:
+                    goBackAnIndex();
+                    return new Token(Type.RELATIONAL_OPERATOR.typeCode, lexeme.toString());
+                    
+                case 10:
+                    if ((currentAutomatonState = whenOn10thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        goBackAnIndex();
-                        return new Token(Type.SPECIAL_CHARACTER.typeCode, lexeme.toString());
+                        throw new RuntimeException("Erro: operador inválido");
                     }
 
+                case 11:
+                    goBackAnIndex();
+                    return new Token(Type.RESERVED_WORD.typeCode, lexeme.toString());
+
+                case 12:
+                    if ((currentAutomatonState = whenOn12thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: operador especial inválido");
+                    }
+
+                case 13:
+                    if ((currentAutomatonState = whenOn13thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: operador especial inválido");
+                    }
+
+                case 14:
+                    goBackAnIndex();
+                    return new Token(Type.SPECIAL_OPERATOR.typeCode, lexeme.toString());
+
+                case 15:
+                    if ((currentAutomatonState = whenOn15thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: char inválido");
+                    }
+
+                case 16:
+                    if ((currentAutomatonState = whenOn16thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: char inválido");
+                    }
+
+                case 17:
+                    goBackAnIndex();
+                    return new Token(Type.CHAR.typeCode, lexeme.toString());
+
+                case 18:
+                    if ((currentAutomatonState = whenOn18thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: operador especial inválido");
+                    }
+
+                case 19:
+                    if ((currentAutomatonState = whenOn19thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        lexeme.append(currentCharacter);
+                        break;
+                    } else {
+                        throw new RuntimeException("Erro: operador especial inválido");
+                    }
+
+                case 99:
+                    return new Token(Type.CODE_END.typeCode, lexeme.toString());
             }
         }
         return null;
@@ -140,26 +243,41 @@ public class Compiler {
     private int whenOnInitialState(char currentCharacter) {
         if (isWhiteSpace(currentCharacter)) {
             return 0;
-        } else if (isLetterOrUnderline(currentCharacter)) {
+        } else if (isLetter(currentCharacter) || isUnderline(currentCharacter)) {
             return 1;
         } else if (isDigit(currentCharacter)) {
             return 2;
         } else if (isSpecialCharacter(currentCharacter)) {
             return 5;
+        } else if (isArithmeticOperator(currentCharacter)) {
+            return 6;
+        } else if (isAssignOperator(currentCharacter)) {
+            return 7;
+        } else if (isRelationalOperator(currentCharacter)) {
+            return 8;
+        } else if (isNegationOperator(currentCharacter)) {
+            return 10;
+        } else if (isCircumflex(currentCharacter)) {
+            return 12;
+        } else if (isSingleQuotes(currentCharacter)) {
+            return 15;
+        } else if (isDollarSign(currentCharacter)) {
+            goBackAnIndex();
+            return 99;        
         } else {
             throw new RuntimeException("Error: invalid token");
         }
     }
 
-    private int whenOnFirstState(char currentCharacter) {
-        if (isLetterOrUnderline(currentCharacter) || isDigit(currentCharacter)) {
+    private int whenOn1stState(char currentCharacter) {
+        if (isLetter(currentCharacter) || isDigit(currentCharacter) || isUnderline(currentCharacter)) {
             return 1;
         } else {
             return INVALID_DESTINATION_STATE;
         }
     }
 
-    private int whenOnSecondState(char currentCharacter) {
+    private int whenOn2ndState(char currentCharacter) {
         if (isDigit(currentCharacter)) {
             return 2;
         } else if (isPoint(currentCharacter)) {
@@ -169,7 +287,7 @@ public class Compiler {
         }
     }
 
-    private int whenOnThirdState(char currentCharacter) {
+    private int whenOn3rdState(char currentCharacter) {
         if (isDigit(currentCharacter)) {
             return 4;
         } else {
@@ -177,7 +295,7 @@ public class Compiler {
         }
     }
 
-    private int whenOnFourthState(char currentCharacter) {
+    private int whenOn4thState(char currentCharacter) {
         if (isDigit(currentCharacter)) {
             return 4;
         } else {
@@ -185,11 +303,77 @@ public class Compiler {
         }
     }
 
-    private int whenOnFithState(char currentCharacter) {
-        if (isSpecialCharacter(currentCharacter)) {
-            return 5;
+    private int whenOn7thState(char currentCharacter) {
+        if (isAssignOperator(currentCharacter)) {
+            return 9;
         } else {
-            return INVALID_DESTINATION_STATE;
+            return 7;
+        }
+    }
+
+    private int whenOn8thState(char currentCharacter) {
+        if (isAssignOperator(currentCharacter)) {
+            return 9;
+        } else {
+            return 8;
+        }
+    }
+
+    private int whenOn10thState(char currentCharacter) {
+        if (isAssignOperator(currentCharacter)) {
+            return 9;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn12thState(char currentCharacter) {
+        if (isMinusSign(currentCharacter)) {
+            return 13;
+        } else if (isAssignOperator(currentCharacter)) {
+            return 18;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn13thState(char currentCharacter) {
+        if (isCircumflex(currentCharacter)) {
+            return 14;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn15thState(char currentCharacter) {
+        if (isLetter(currentCharacter) || isDigit(currentCharacter)) {
+            return 16;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn16thState(char currentCharacter) {
+        if (isSingleQuotes(currentCharacter)) {
+            return 17;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn18thState(char currentCharacter) {
+        if (isAssignOperator(currentCharacter)) {
+            return 19;
+        } else {
+            return -1;
+        }
+    }
+
+    private int whenOn19thState(char currentCharacter) {
+        if (isCircumflex(currentCharacter)) {
+            return 14;
+        } else {
+            return -1;
         }
     }
 
@@ -197,8 +381,12 @@ public class Compiler {
         return EMPTY_SPACE_CHARACTERS.contains(Character.valueOf(currentCharacter));
     }
 
-    private boolean isLetterOrUnderline(char currentCharacter) {
-        return (Character.isLetter(currentCharacter) || currentCharacter == UNDERLINE);
+    private boolean isLetter(char currentCharacter) {
+        return (Character.isLetter(currentCharacter));
+    }
+
+    private boolean isUnderline(char currentCharacter) {
+        return currentCharacter == UNDERLINE;
     }
 
     private boolean isDigit(char currentCharacter) {
@@ -206,7 +394,7 @@ public class Compiler {
     }
 
     private boolean isPoint(char currentCharacter) {
-        return (currentCharacter == POINT);
+        return currentCharacter == POINT;
     }
 
     private boolean isSpecialCharacter(char currentCharacter) {
@@ -215,5 +403,37 @@ public class Compiler {
 
     private boolean isArithmeticOperator(char currentCharacter) {
         return ARITHMETIC_OPERATORS.contains(Character.valueOf(currentCharacter));
+    }
+
+    private boolean isAssignOperator(char currentCharacter) {
+        return currentCharacter == ASSIGNMENT_OPERATOR;
+    }
+
+    private boolean isRelationalOperator(char currentCharacter) {
+        return RELATIONAL_OPERATORS.contains(Character.valueOf(currentCharacter));
+    }
+
+    private boolean isNegationOperator(char currentCharacter) {
+        return currentCharacter == NEGATION_OPERATOR;
+    }
+
+    private boolean isReservedWord(String charSequence) {
+        return RESERVED_WORDS.contains(charSequence.toLowerCase());
+    }
+
+    private boolean isSingleQuotes(char currentCharacter) {
+        return currentCharacter == SINGLE_QUOTE;
+    }
+
+    private boolean isCircumflex(char currentCharacter) {
+        return currentCharacter == CIRCUMFLEX;
+    }
+
+    private boolean isMinusSign(char currentCharacter) {
+        return currentCharacter == MINUS_SIGN;
+    }
+
+    private boolean isDollarSign(char currentCharacter) {
+        return currentCharacter == DOLLAR_SIGN;
     }
 }
