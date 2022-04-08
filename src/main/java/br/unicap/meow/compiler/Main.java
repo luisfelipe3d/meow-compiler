@@ -24,16 +24,18 @@ import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
-        String filePath = "src" + File.separator + "main" + File.separator+
-                "java"+File.separator+"br"+File.separator+
-                "unicap"+File.separator+"meow"+File.separator+
-                "compiler"+File.separator+"controller"+File.separator+"code.txt";
+        final String packagePath = "src" + File.separator + "main" + File.separator + "java" + File.separator + "br" + File.separator +
+            "unicap" + File.separator + "meow" + File.separator + "compiler" + File.separator;
 
-        Compiler comp = new Compiler(filePath);
+        String fileName = "meow-code.txt";
+
+        
+
         Token token = null;
-        while ((token = comp.getToken()) != null) {
-            System.out.println("Lexeme: " + token.getLexeme() + "\nType: " + token.getType());
-            System.out.println();
+        Compiler compiler = new Compiler(packagePath + fileName);
+
+        while ((token = compiler.getNextToken()) != null) {
+            System.out.println(token);
         }
     }
 }

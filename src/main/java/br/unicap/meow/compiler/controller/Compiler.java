@@ -35,12 +35,16 @@ public class Compiler {
 
     private char[] fileContent;
     private int currentFileIndex;
+    private int currentFileRow;
+    private int currentFileColumn;
 
     public Compiler(String path) {
         try {
             String fileContent = new String(Files.readAllBytes(Paths.get(path)));
             this.fileContent = fileContent.toCharArray();
-            this.currentFileIndex = 0;                        
+            this.currentFileIndex = 0;
+            this.currentFileRow = 1;
+            this.currentFileColumn = 0;                  
         } catch (IOException ex) {
             ex.printStackTrace();
         }  
@@ -56,25 +60,39 @@ public class Compiler {
 
     private void goBackAnIndex() {
         currentFileIndex--;
+        currentFileColumn--;
     }
 
-    public Token getToken() {
+    public Token getNextToken() {
         char currentCharacter;
         int currentAutomatonState = 0;
         StringBuffer lexeme = new StringBuffer();
 
         while (hasNextChar()) {
             currentCharacter = getNextChar();
+            currentFileColumn++;
 
             switch (currentAutomatonState) {
                 case 0:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOnInitialState(currentCharacter)) != INITIAL_STATE) {
-                        lexeme.append(currentCharacter);
+                    if ((currentAutomatonState = LexicalAnalyzer.whenOnInitialState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                        if (currentAutomatonState != INITIAL_STATE) {
+                            lexeme.append(currentCharacter);
+                        } else {
+                            if (currentCharacter == '\n') {
+                                currentFileRow++;
+                                currentFileColumn = 0;
+                            }
+                        }
+
+                        if ((currentAutomatonState == END_OF_CODE_STATE)) {
+                            goBackAnIndex();
+                        }
+
+                    } else {
+                        throw new RuntimeException("ERROR! Invalid character on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
-                    if ((currentAutomatonState == END_OF_CODE_STATE)) {
-                        goBackAnIndex();
-                    }
 
                     break;
 
@@ -106,7 +124,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid floar number on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR! Invalid float number on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 4:
@@ -153,7 +172,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid operator on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR! Invalid relational operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 11:
@@ -165,7 +185,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid special operator on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 13:
@@ -173,7 +194,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid special operator on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 14:
@@ -185,7 +207,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid char token on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR! Invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 16:
@@ -193,7 +216,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid car token on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR: invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 17:
@@ -205,7 +229,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid special operator on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 19:
@@ -213,7 +238,8 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                         break;
                     } else {
-                        throw new RuntimeException("ERROR: invalid special operator on index " + (currentFileIndex - 1));
+                        throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                            + badTokenErrorMessage(lexeme));
                     }
 
                 case 99:
@@ -222,5 +248,9 @@ public class Compiler {
         }
 
         return null;
+    }
+
+    private String badTokenErrorMessage(StringBuffer lexeme) {
+        return "Bad Token: " + lexeme.toString() + fileContent[currentFileIndex - 1];
     }
 }
