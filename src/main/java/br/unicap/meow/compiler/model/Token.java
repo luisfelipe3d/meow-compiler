@@ -35,4 +35,8 @@ public class Token {
         return this.lexeme;
     }
 
+    public String toString() {
+        return "Lexeme: " + getLexeme() + "\n" + "Token Type: " + getType() + "\n";
+    }
+
 }
