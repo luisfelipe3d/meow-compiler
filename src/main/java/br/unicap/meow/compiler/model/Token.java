@@ -19,15 +19,15 @@
 package br.unicap.meow.compiler.model;
 
 public class Token {
-    private int type;
+    private String type;
     private String lexeme;
 
-    public Token(int type, String lexeme) {
+    public Token(String type, String lexeme) {
         this.type = type;
         this.lexeme = lexeme;
     }
 
-    public int getType() {
+    public String getType() {
         return this.type;
     }
 
