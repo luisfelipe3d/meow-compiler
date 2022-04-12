@@ -27,27 +27,33 @@ import br.unicap.meow.compiler.model.TokenTypes;
 
 public class Compiler {
     private final int INITIAL_STATE = 0;
-    private final int END_OF_CODE_STATE = 99;
     private final int RESERVED_WORD_STATE = 11;
     private final int ASSIGNMENT_OPERATOR_STATE = 7;
     private final int INVALID_DESTINATION_STATE = -1;
     private final int BASIC_RELATIONAL_OPERATOR_STATE = 8;
+    private final char NULL_CHAR = Character.MIN_VALUE;
 
     private char[] fileContent;
     private int currentFileIndex;
-    private int currentFileRow;
-    private int currentFileColumn;
+
+    private int rowCounter;
+    private int columnCounter;
 
     public Compiler(String path) {
         try {
             String fileContent = new String(Files.readAllBytes(Paths.get(path)));
             this.fileContent = fileContent.toCharArray();
             this.currentFileIndex = 0;
-            this.currentFileRow = 1;
-            this.currentFileColumn = 0;                  
+
+            this.rowCounter = 1;
+            this.columnCounter = 0;                  
         } catch (IOException ex) {
             ex.printStackTrace();
         }  
+    }
+
+    private boolean isEndOfFile() {
+        return currentFileIndex > fileContent.length;
     }
 
     private boolean hasNextChar() {
@@ -55,195 +61,213 @@ public class Compiler {
     }
 
     private char getNextChar() {
-        return fileContent[currentFileIndex++];
+        return fileContent[currentFileIndex];
     }
+
+    private void goToNextIndex() {
+        currentFileIndex++;
+        columnCounter++;
+    } 
 
     private void goBackAnIndex() {
         currentFileIndex--;
-        currentFileColumn--;
+        columnCounter--;
+    }
+
+    private void increaseRow() {
+        rowCounter++;
+        columnCounter = 0;
     }
 
     public Token getNextToken() {
-        char currentCharacter;
+        char currentCharacter = NULL_CHAR;
         int currentAutomatonState = 0;
         StringBuffer lexeme = new StringBuffer();
+        boolean hasReadNewCharacter;
 
-        while (hasNextChar()) {
-            currentCharacter = getNextChar();
-            currentFileColumn++;
+        while (!isEndOfFile()) {
+            if (hasNextChar()) {
+                currentCharacter = getNextChar();
+                hasReadNewCharacter = true;
+            } else {                
+                if(currentCharacter == NULL_CHAR) {
+                    break;
+                }
+                
+                hasReadNewCharacter = false;
+            }
+            
+            goToNextIndex();
 
             switch (currentAutomatonState) {
                 case 0:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOnInitialState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        if (currentAutomatonState != INITIAL_STATE) {
-                            lexeme.append(currentCharacter);
-                        } else {
-                            if (currentCharacter == '\n') {
-                                currentFileRow++;
-                                currentFileColumn = 0;
-                            }
-                        }
-
-                        if ((currentAutomatonState == END_OF_CODE_STATE)) {
-                            goBackAnIndex();
-                        }
-
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOnInitialState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    if (currentAutomatonState != INITIAL_STATE) {
+                        lexeme.append(currentCharacter);
                     } else {
-                        throw new RuntimeException("ERROR! Invalid character on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
+                        if (currentCharacter == '\n') {
+                            increaseRow();
+                        }
                     }
 
+                } else {
+                    throw new RuntimeException("ERROR! Invalid character on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+
+                break;
+
+            case 1:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn1stState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+
+                    if (LexicalAnalyzer.isReservedWord(lexeme.toString())) {
+                        currentAutomatonState = RESERVED_WORD_STATE;
+                    }
 
                     break;
-
-                case 1:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn1stState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-
-                        if (LexicalAnalyzer.isReservedWord(lexeme.toString())) {
-                            currentAutomatonState = RESERVED_WORD_STATE;
-                        }     
-
-                        break;
-                    } else {
-                        goBackAnIndex();
-                        return new Token(TokenTypes.IDENTIFIER.typeCode, lexeme.toString());
-                    }
-
-                case 2:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn2ndState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;                        
-                    } else {
-                        goBackAnIndex();
-                        return new Token(TokenTypes.INTEGER.typeCode, lexeme.toString());
-                    }
-
-                case 3:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn3rdState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR! Invalid float number on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
-
-                case 4:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn4thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        goBackAnIndex();
-                        return new Token(TokenTypes.REAL.typeCode, lexeme.toString());
-                    }
-
-                case 5:
+                } else {
                     goBackAnIndex();
-                    return new Token(TokenTypes.SPECIAL_CHARACTER.typeCode, lexeme.toString());
+                    return new Token(TokenTypes.IDENTIFIER.typeCode, lexeme.toString());
+                }
 
-                case 6:
-                    goBackAnIndex();
-                    return new Token(TokenTypes.ARITHMETIC_OPERATOR.typeCode, lexeme.toString());
-
-                case 7:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn7thState(currentCharacter)) == ASSIGNMENT_OPERATOR_STATE) {
-                        goBackAnIndex();
-                        return new Token(TokenTypes.ASSIGNMENT_OPERATOR.typeCode, lexeme.toString());
-                    }
-
+            case 2:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn2ndState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                     lexeme.append(currentCharacter);
-                    break;                    
+                    break;                        
+                } else {
+                    goBackAnIndex();
+                    return new Token(TokenTypes.INTEGER.typeCode, lexeme.toString());
+                }
 
-                case 8:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn8thState(currentCharacter)) == BASIC_RELATIONAL_OPERATOR_STATE) {
-                        goBackAnIndex();
-                        return new Token(TokenTypes.RELATIONAL_OPERATOR.typeCode, lexeme.toString());                        
-                    }
-
+            case 3:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn3rdState(currentCharacter)) != INVALID_DESTINATION_STATE) {
                     lexeme.append(currentCharacter);
-                    break;                    
-                    
-                case 9:
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR! Invalid float number on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+            case 4:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn4thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
                     goBackAnIndex();
-                    return new Token(TokenTypes.RELATIONAL_OPERATOR.typeCode, lexeme.toString());
-                    
-                case 10:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn10thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR! Invalid relational operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+                    return new Token(TokenTypes.REAL.typeCode, lexeme.toString());
+                }
 
-                case 11:
+            case 5:
+                goBackAnIndex();
+                return new Token(TokenTypes.SPECIAL_CHARACTER.typeCode, lexeme.toString());
+
+            case 6:
+                goBackAnIndex();
+                return new Token(TokenTypes.ARITHMETIC_OPERATOR.typeCode, lexeme.toString());
+
+            case 7:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn7thState(currentCharacter)) == ASSIGNMENT_OPERATOR_STATE) {
                     goBackAnIndex();
-                    return new Token(TokenTypes.RESERVED_WORD.typeCode, lexeme.toString());
+                    return new Token(TokenTypes.ASSIGNMENT_OPERATOR.typeCode, lexeme.toString());
+                }
 
-                case 12:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn12thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+                lexeme.append(currentCharacter);
+                break;                    
 
-                case 13:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn13thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
-
-                case 14:
+            case 8:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn8thState(currentCharacter)) == BASIC_RELATIONAL_OPERATOR_STATE) {
                     goBackAnIndex();
-                    return new Token(TokenTypes.SPECIAL_OPERATOR.typeCode, lexeme.toString());
+                    return new Token(TokenTypes.RELATIONAL_OPERATOR.typeCode, lexeme.toString());                        
+                }
 
-                case 15:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn15thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR! Invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+                lexeme.append(currentCharacter);
+                break;                    
+                
+            case 9:
+                goBackAnIndex();
+                return new Token(TokenTypes.RELATIONAL_OPERATOR.typeCode, lexeme.toString());
+                
+            case 10:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn10thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR! Invalid relational operator on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
 
-                case 16:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn16thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR: invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+            case 11:
+                goBackAnIndex();
+                return new Token(TokenTypes.RESERVED_WORD.typeCode, lexeme.toString());
 
-                case 17:
-                    goBackAnIndex();
-                    return new Token(TokenTypes.CHAR.typeCode, lexeme.toString());
+            case 12:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn12thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR! Invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
 
-                case 18:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn18thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+            case 13:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn13thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR! Invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
 
-                case 19:
-                    if ((currentAutomatonState = LexicalAnalyzer.whenOn19thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
-                        lexeme.append(currentCharacter);
-                        break;
-                    } else {
-                        throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
-                            + badTokenErrorMessage(lexeme));
-                    }
+            case 14:
+                goBackAnIndex();
+                return new Token(TokenTypes.SPECIAL_OPERATOR.typeCode, lexeme.toString());
 
-                case 99:
-                    return new Token(TokenTypes.CODE_END.typeCode, lexeme.toString());
+            case 15:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn15thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR! Invalid char token on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+            case 16:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn16thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR: invalid char token on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+            case 17:
+                goBackAnIndex();
+                return new Token(TokenTypes.CHAR.typeCode, lexeme.toString());
+
+            case 18:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn18thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR: invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+            case 19:
+                if (hasReadNewCharacter && (currentAutomatonState = LexicalAnalyzer.whenOn19thState(currentCharacter)) != INVALID_DESTINATION_STATE) {
+                    lexeme.append(currentCharacter);
+                    break;
+                } else {
+                    throw new RuntimeException("ERROR: invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
+                        + badTokenErrorMessage(lexeme));
+                }
+
+            case 99:
+                goBackAnIndex();
+                return new Token(TokenTypes.CODE_END.typeCode, lexeme.toString());
+
             }
         }
 
