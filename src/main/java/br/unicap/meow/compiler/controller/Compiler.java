@@ -31,30 +31,33 @@ public class Compiler {
     private final int ASSIGNMENT_OPERATOR_STATE = 7;
     private final int INVALID_DESTINATION_STATE = -1;
     private final int BASIC_RELATIONAL_OPERATOR_STATE = 8;
+    private final char NULL_CHAR = Character.MIN_VALUE;
 
     private char[] fileContent;
     private int currentFileIndex;
-    private int currentFileRow;
-    private int currentFileColumn;
+
+    private int rowCounter;
+    private int columnCounter;
 
     public Compiler(String path) {
         try {
             String fileContent = new String(Files.readAllBytes(Paths.get(path)));
             this.fileContent = fileContent.toCharArray();
             this.currentFileIndex = 0;
-            this.currentFileRow = 1;
-            this.currentFileColumn = 0;                  
+
+            this.rowCounter = 1;
+            this.columnCounter = 0;                  
         } catch (IOException ex) {
             ex.printStackTrace();
         }  
     }
 
-    private boolean hasNextChar() {
-        return currentFileIndex < fileContent.length;
-    }
-
     private boolean isEndOfFile() {
         return currentFileIndex > fileContent.length;
+    }
+
+    private boolean hasNextChar() {
+        return currentFileIndex < fileContent.length;
     }
 
     private char getNextChar() {
@@ -63,16 +66,21 @@ public class Compiler {
 
     private void goToNextIndex() {
         currentFileIndex++;
-        currentFileColumn++;
+        columnCounter++;
     } 
 
     private void goBackAnIndex() {
         currentFileIndex--;
-        currentFileColumn--;
+        columnCounter--;
+    }
+
+    private void increaseRow() {
+        rowCounter++;
+        columnCounter = 0;
     }
 
     public Token getNextToken() {
-        char currentCharacter = Character.MIN_VALUE;
+        char currentCharacter = NULL_CHAR;
         int currentAutomatonState = 0;
         StringBuffer lexeme = new StringBuffer();
         boolean hasReadNewCharacter;
@@ -81,12 +89,12 @@ public class Compiler {
             if (hasNextChar()) {
                 currentCharacter = getNextChar();
                 hasReadNewCharacter = true;
-            } else {
-                hasReadNewCharacter = false;
-
-                if(currentCharacter == Character.MIN_VALUE) {
+            } else {                
+                if(currentCharacter == NULL_CHAR) {
                     break;
                 }
+                
+                hasReadNewCharacter = false;
             }
             
             goToNextIndex();
@@ -98,13 +106,12 @@ public class Compiler {
                         lexeme.append(currentCharacter);
                     } else {
                         if (currentCharacter == '\n') {
-                            currentFileRow++;
-                            currentFileColumn = 0;
+                            increaseRow();
                         }
                     }
 
                 } else {
-                    throw new RuntimeException("ERROR! Invalid character on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid character on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -139,7 +146,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR! Invalid float number on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid float number on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -187,7 +194,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR! Invalid relational operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid relational operator on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -200,7 +207,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -209,7 +216,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR! Invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -222,7 +229,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR! Invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR! Invalid char token on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -231,7 +238,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR: invalid char token on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR: invalid char token on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -244,7 +251,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR: invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
@@ -253,7 +260,7 @@ public class Compiler {
                     lexeme.append(currentCharacter);
                     break;
                 } else {
-                    throw new RuntimeException("ERROR: invalid special operator on row " + currentFileRow + " and column " + currentFileColumn + "\t"
+                    throw new RuntimeException("ERROR: invalid special operator on row " + rowCounter + " and column " + columnCounter + "\t"
                         + badTokenErrorMessage(lexeme));
                 }
 
