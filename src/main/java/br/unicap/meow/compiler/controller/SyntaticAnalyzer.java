@@ -19,11 +19,19 @@
 package br.unicap.meow.compiler.controller;
 
 import br.unicap.meow.compiler.model.Token;
+import br.unicap.meow.compiler.model.Variable;
 import br.unicap.meow.compiler.model.TokenTypes;
+
+import java.util.List;
+import java.util.ArrayList;
 
 public class SyntaticAnalyzer {
     private Compiler scanner;
     private Token currentToken;
+    private int currentScope = 0;
+    List<Variable> variablesInCode = new ArrayList<Variable>();
+    private String currentType;
+
 
     public SyntaticAnalyzer(Compiler compiler) {
         this.scanner = compiler;
@@ -66,25 +74,36 @@ public class SyntaticAnalyzer {
             System.out.println("Your code is AMAZING! ;)");
     }
 
+    private void insideBlockOfCode() {
+        while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char"))){
+            declaration_nonTerminal();
+        }
+
+        while (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") || currentToken.getLexeme().equals("if"))) {
+            command_nonTerminal();
+        }
+    }
+
     private void blockOfCode_nonTerminal() {
         if (currentToken != null && currentToken.getLexeme().equals("{")) {
             currentToken = scanner.getNextToken();
+            currentScope++;
 
-            while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char"))){
-                declaration_nonTerminal();
-            }
-    
-            while (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") || currentToken.getLexeme().equals("if"))) {
-                command_nonTerminal();
-            }
+            while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char") ||
+                currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") || currentToken.getLexeme().equals("if"))) {
+                    insideBlockOfCode();
+                }
+                
         } else {
             throw new RuntimeException(badSyntaxErrorMessage() + "\t '{' is missing");
         }
 
-        if (currentToken != null && currentToken.getLexeme().equals("}"))
+        if (currentToken != null && currentToken.getLexeme().equals("}")) {
             currentToken = scanner.getNextToken();
-        else
-            throw new RuntimeException(badSyntaxErrorMessage() + "\t '}' is missing");        
+            currentScope--;
+        } else {
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '}' is missing");
+        }
     }
 
     private void command_nonTerminal() {        
@@ -146,10 +165,14 @@ public class SyntaticAnalyzer {
     }
 
     private void assignment_nonTerminal() {
-        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode))
+        String variableName;
+
+        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode)) {
+            variableName = currentToken.getLexeme();
             currentToken = scanner.getNextToken();            
-        else
-            throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be an identifier");        
+        } else {
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be an identifier");     
+        }
 
         if (currentToken != null && currentToken.getLexeme().equals("="))
             currentToken = scanner.getNextToken();
@@ -158,10 +181,29 @@ public class SyntaticAnalyzer {
 
         arithmeticExpression_nonTerminal();
 
+        Variable declaredVariable = isVariableDeclared(variableName);
+        if (declaredVariable != null) {
+            if (!declaredVariable.getType().equals(currentType)) {
+                throw new RuntimeException(badSyntaxErrorMessage() + "\t type mismatch");
+            }
+        } else {
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t variable '" + variableName + "' was not declared");
+        }
+
         if (currentToken != null && currentToken.getLexeme().equals(";"))
             currentToken = scanner.getNextToken();
         else
             throw new RuntimeException(badSyntaxErrorMessage() + "\t ';' is missing");
+
+    }
+
+    private Variable isVariableDeclared(String variableName) {
+        for (Variable variable : variablesInCode) {
+            if ((variable.getScope() == currentScope && variable.getName().equals(variableName)) || variable.getName().equals(variableName)) {
+                return variable;
+            }
+        }
+        return null;
     }
 
     private void relationalExpression_nonTerminal() {
@@ -206,25 +248,67 @@ public class SyntaticAnalyzer {
             }            
         } else if (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getType().equals(TokenTypes.REAL.typeCode) ||
             currentToken.getType().equals(TokenTypes.INTEGER.typeCode) || currentToken.getType().equals(TokenTypes.CHAR.typeCode))) {
-            currentToken = scanner.getNextToken();
+                if (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode)) {
+                    Variable declaredVariable = isVariableDeclared(currentToken.getLexeme());
+                    if (declaredVariable != null) {
+                        currentType = declaredVariable.getType();
+                    } else {
+                        throw new RuntimeException(badSyntaxErrorMessage() + "\t variable '" + currentToken.getLexeme() + "' was not declared");
+                    }
+                } else {
+                    currentType = currentToken.getType();
+                }
+                currentToken = scanner.getNextToken();
         }
     }
 
     private void declaration_nonTerminal() {
-        if (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char")))
-                currentToken = scanner.getNextToken();
-        else
+        String variableName, variableType;
+
+        if (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char"))) {
+            switch (currentToken.getLexeme()) {
+                case "int":
+                    variableType = TokenTypes.INTEGER.typeCode;
+                    break;
+                case "float":
+                    variableType = TokenTypes.REAL.typeCode;
+                    break;
+                default:
+                    variableType = TokenTypes.CHAR.typeCode;
+            }
+
+            currentType = variableType;
+            currentToken = scanner.getNextToken();
+        } else {
             throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be a type");
+        }
         
-        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode))
+        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode)) {
+            variableName = currentToken.getLexeme();
             currentToken = scanner.getNextToken();
-        else
+        } else {
             throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be an identifier");
+        }
         
-        if (currentToken != null && currentToken.getLexeme().equals(";"))
+        if (currentToken != null && currentToken.getLexeme().equals(";")) {
             currentToken = scanner.getNextToken();
-        else
+        } else {
             throw new RuntimeException(badSyntaxErrorMessage() + "\t ';' is missing");
+        }
         
+        Variable declaredVariable = new Variable(currentScope, variableName, variableType);
+        if (!isVariableAlreadyInScope(declaredVariable))
+            variablesInCode.add(new Variable(currentScope, variableName, variableType));
+        else 
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t variable '" + variableName + "' already defined");
+    }
+
+    private boolean isVariableAlreadyInScope(Variable newVariable) {
+        for (Variable variableInCode : variablesInCode) {
+            if (variableInCode.getScope() == newVariable.getScope() && variableInCode.getName().equals(newVariable.getName()))
+                return true;
+        }
+
+        return false;
     }
 }
