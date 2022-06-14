@@ -16,23 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package br.unicap.meow.compiler;
+package br.unicap.meow.compiler.model;
 
-import br.unicap.meow.compiler.controller.Compiler;
-import br.unicap.meow.compiler.controller.SyntaticAnalyzer;
-import java.io.File;
+public class Variable {
+    private int scope;
+    private String name;
+    private String type;
 
-public class Main {
-    public static void main(String[] args) {
-        final String packagePath = "src" + File.separator + "main" + File.separator + "java" + File.separator + "br" + File.separator +
-            "unicap" + File.separator + "meow" + File.separator + "compiler" + File.separator;
+    public Variable(int scope, String name, String type) {
+        this.scope = scope;
+        this.name = name;
+        this.type = type;
+    }
 
-        String fileName = "meow-code.txt";
+    public int getScope() {
+        return scope;
+    }
 
-        
-        Compiler scanner = new Compiler(packagePath + fileName);
-        SyntaticAnalyzer parser = new SyntaticAnalyzer(scanner);
+    public String getName() {
+        return name;
+    }
 
-        parser.startingPoint_nonTerminal();
+    public String getType() {
+        return type;
     }
 }

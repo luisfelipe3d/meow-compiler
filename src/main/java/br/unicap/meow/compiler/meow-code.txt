@@ -1,7 +1,6 @@
 int main(){
-    if(){
-        if(){
-
-        }else{}
-    }else{}
+	int a;
+	float b;
+	b = 1;	
+	a = 1.1;
 }
