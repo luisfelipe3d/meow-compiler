@@ -32,7 +32,7 @@ public class Main {
         
         Compiler scanner = new Compiler(packagePath + fileName);
         SyntaticAnalyzer parser = new SyntaticAnalyzer(scanner);
-        
+
         parser.startingPoint_nonTerminal();
     }
 }

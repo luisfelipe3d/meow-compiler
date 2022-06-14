@@ -53,11 +53,11 @@ public class Compiler {
         }  
     }
 
-    private boolean isEndOfFile() {
+    public boolean isEndOfFile() {
         return currentFileIndex > fileContent.length;
     }
 
-    private boolean hasNextChar() {
+    public boolean hasNextChar() {
         return currentFileIndex < fileContent.length;
     }
 
