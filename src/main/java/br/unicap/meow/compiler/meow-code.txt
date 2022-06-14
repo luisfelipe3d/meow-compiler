@@ -1,4 +1,4 @@
-int main(){
-    float b;
-    b = 1.1456;
+int main() {
+    char a;
+    a = 40;
 }
