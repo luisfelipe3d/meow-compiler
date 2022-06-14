@@ -89,8 +89,10 @@ public class SyntaticAnalyzer {
             currentToken = scanner.getNextToken();
             currentScope++;
 
-            while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char") ||
-                currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") || currentToken.getLexeme().equals("if"))) {
+            while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") ||
+                currentToken.getLexeme().equals("char") || currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) ||
+                currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") ||
+                currentToken.getLexeme().equals("if"))) {
                     insideBlockOfCode();
                 }
                 
@@ -194,13 +196,13 @@ public class SyntaticAnalyzer {
             currentToken = scanner.getNextToken();
         else
             throw new RuntimeException(badSyntaxErrorMessage() + "\t ';' is missing");
-
     }
 
     private Variable isVariableDeclared(String variableName) {
         for (Variable variable : variablesInCode) {
-            if ((variable.getScope() == currentScope && variable.getName().equals(variableName)) || variable.getName().equals(variableName)) {
-                return variable;
+            if ((variable.getScope() == currentScope && variable.getName().equals(variableName)) ||
+                variable.getName().equals(variableName)) {
+                    return variable;
             }
         }
         return null;
@@ -246,8 +248,9 @@ public class SyntaticAnalyzer {
             if (!currentToken.getLexeme().equals(")")) {
                 throw new RuntimeException(badSyntaxErrorMessage() + "\t ')' is missing");
             }            
-        } else if (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getType().equals(TokenTypes.REAL.typeCode) ||
-            currentToken.getType().equals(TokenTypes.INTEGER.typeCode) || currentToken.getType().equals(TokenTypes.CHAR.typeCode))) {
+        } else if (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) ||
+            currentToken.getType().equals(TokenTypes.REAL.typeCode) || currentToken.getType().equals(TokenTypes.INTEGER.typeCode) ||
+            currentToken.getType().equals(TokenTypes.CHAR.typeCode))) {
                 if (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode)) {
                     Variable declaredVariable = isVariableDeclared(currentToken.getLexeme());
                     if (declaredVariable != null) {
@@ -265,17 +268,19 @@ public class SyntaticAnalyzer {
     private void declaration_nonTerminal() {
         String variableName, variableType;
 
-        if (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char"))) {
-            switch (currentToken.getLexeme()) {
-                case "int":
-                    variableType = TokenTypes.INTEGER.typeCode;
-                    break;
-                case "float":
-                    variableType = TokenTypes.REAL.typeCode;
-                    break;
-                default:
-                    variableType = TokenTypes.CHAR.typeCode;
-            }
+        if (currentToken != null && (currentToken.getLexeme().equals("int") ||
+            currentToken.getLexeme().equals("float") ||
+            currentToken.getLexeme().equals("char"))) {
+                switch (currentToken.getLexeme()) {
+                    case "int":
+                        variableType = TokenTypes.INTEGER.typeCode;
+                        break;
+                    case "float":
+                        variableType = TokenTypes.REAL.typeCode;
+                        break;
+                    default:
+                        variableType = TokenTypes.CHAR.typeCode;
+                }
 
             currentType = variableType;
             currentToken = scanner.getNextToken();
