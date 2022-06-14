@@ -18,7 +18,6 @@
 
 package br.unicap.meow.compiler;
 
-import br.unicap.meow.compiler.model.Token;
 import br.unicap.meow.compiler.controller.Compiler;
 import br.unicap.meow.compiler.controller.SyntaticAnalyzer;
 import java.io.File;
@@ -33,7 +32,7 @@ public class Main {
         
         Compiler scanner = new Compiler(packagePath + fileName);
         SyntaticAnalyzer parser = new SyntaticAnalyzer(scanner);
-
+        
         parser.startingPoint_nonTerminal();
     }
 }

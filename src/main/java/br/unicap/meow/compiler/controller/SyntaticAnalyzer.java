@@ -23,82 +23,94 @@ import br.unicap.meow.compiler.model.TokenTypes;
 
 public class SyntaticAnalyzer {
     private Compiler scanner;
-    private Token token;
+    private Token currentToken;
 
     public SyntaticAnalyzer(Compiler compiler) {
         this.scanner = compiler;
-        this.token = compiler.getNextToken();
+        this.currentToken = compiler.getNextToken();
+    }
+
+    private String badSyntaxErrorMessage() {
+        if (currentToken != null)
+            return "ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " before " + currentToken.getLexeme();
+
+        return "ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn();
     }
 
     public void startingPoint_nonTerminal() {
-        if (token != null && token.getLexeme().equals("int"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("int"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t 'int' is missing");
+            throw new RuntimeException("ERROR on row 1 and column 1"  + "\t 'int' is missing");
 
-        if (token != null && token.getLexeme().equals("main"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("main"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t 'main' is missing");        
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t 'main' is missing");        
 
-        if (token != null && token.getLexeme().equals("("))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("("))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t '(' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '(' is missing");
         
-        if (token != null && token.getLexeme().equals(")"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals(")"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t ')' is missing");        
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t ')' is missing");        
 
         blockOfCode_nonTerminal();
+
+        if (currentToken != null)
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t code out of block scope");
+        else
+            System.out.println("Your code is AMAZING! ;)");
     }
 
     private void blockOfCode_nonTerminal() {
-        if (token != null && token.getLexeme().equals("{"))
-            token = scanner.getNextToken();
-        else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t '{' is missing");
+        if (currentToken != null && currentToken.getLexeme().equals("{")) {
+            currentToken = scanner.getNextToken();
 
-        while (token != null && (token.getLexeme().equals("int") || token.getLexeme().equals("float") || token.getLexeme().equals("char"))){
-            declaration_nonTerminal();
+            while (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char"))){
+                declaration_nonTerminal();
+            }
+    
+            while (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getLexeme().equals("{") || currentToken.getLexeme().equals("while") || currentToken.getLexeme().equals("if"))) {
+                command_nonTerminal();
+            }
+        } else {
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '{' is missing");
         }
 
-        while (token != null && (token.getType().equals(TokenTypes.IDENTIFIER.typeCode) || token.getLexeme().equals("{")) || token.getLexeme().equals("while") || token.getLexeme().equals("if")) {
-            command_nonTerminal();
-        }
-
-        if (token != null && token.getLexeme().equals("}"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("}"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + "\t '}' is missing");
-        
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '}' is missing");        
     }
 
     private void command_nonTerminal() {        
-        if (token != null && token.getLexeme().equals("while"))
-            iteration_terminal();
-        else if (token != null && token.getLexeme().equals("if")) {
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("while"))
+            iteration_nonTerminal();
+        else if (currentToken != null && currentToken.getLexeme().equals("if")) {
+            currentToken = scanner.getNextToken();
 
-            if (token.getLexeme().equals("(")) {
-                token = scanner.getNextToken();
+            if (currentToken.getLexeme().equals("(")) {
+                currentToken = scanner.getNextToken();
             } else {
-                throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + "\t '(' is missing");
+                throw new RuntimeException(badSyntaxErrorMessage() + "\t '(' is missing");
             }
 
-            relationalExoression_nonTerminal();
+            relationalExpression_nonTerminal();
 
-            if (token.getLexeme().equals(")")) {
-                token = scanner.getNextToken();
+            if (currentToken.getLexeme().equals(")")) {
+                currentToken = scanner.getNextToken();
             } else {
-                throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + "\t ')' is missing");
+                throw new RuntimeException(badSyntaxErrorMessage() + "\t ')' is missing");
             }
 
             command_nonTerminal();
 
-            if (token.getLexeme().equals("else")) {
-                token = scanner.getNextToken();
+            if (currentToken.getLexeme().equals("else")) {
+                currentToken = scanner.getNextToken();
                 command_nonTerminal();
             }                     
         } else
@@ -106,62 +118,56 @@ public class SyntaticAnalyzer {
     }
 
     private void basicCommand_nonTerminal() {
-        if (token.getType().equals(TokenTypes.IDENTIFIER.typeCode))
-            assignment_terminal();
+        if (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode))
+            assignment_nonTerminal();
         else
             blockOfCode_nonTerminal();
     }
 
-    private void iteration_terminal() {
-        if (token != null && token.getLexeme().equals("while"))
-            token = scanner.getNextToken();
+    private void iteration_nonTerminal() {
+        if (currentToken != null && currentToken.getLexeme().equals("while"))
+            currentToken = scanner.getNextToken();
         else 
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-                "\t 'while' is missing"); 
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t 'while' is missing"); 
 
-        if (token != null && token.getLexeme().equals("("))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("("))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-                "\t '(' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '(' is missing");
 
-        relationalExoression_nonTerminal();
+        relationalExpression_nonTerminal();
 
-        if (token != null && token.getLexeme().equals(")"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals(")"))
+            currentToken = scanner.getNextToken();
         else 
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-            "\t ')' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t ')' is missing");
 
         command_nonTerminal();
     }
 
-    private void assignment_terminal() {
-        if (token != null && token.getType().equals(TokenTypes.IDENTIFIER.typeCode))
-            token = scanner.getNextToken();            
+    private void assignment_nonTerminal() {
+        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode))
+            currentToken = scanner.getNextToken();            
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-                "\t token should be an identifier");        
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be an identifier");        
 
-        if (token != null && token.getLexeme().equals("="))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("="))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-                "\t '=' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t '=' is missing");
 
         arithmeticExpression_nonTerminal();
 
-        if (token != null && token.getLexeme().equals(";"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals(";"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() +
-                "\t ';' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t ';' is missing");
     }
 
-    private void relationalExoression_nonTerminal() {
+    private void relationalExpression_nonTerminal() {
         arithmeticExpression_nonTerminal();
-        if (token != null && token.getType().equals(TokenTypes.RELATIONAL_OPERATOR.typeCode)) {
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getType().equals(TokenTypes.RELATIONAL_OPERATOR.typeCode)) {
+            currentToken = scanner.getNextToken();
         }
         arithmeticExpression_nonTerminal();
     }
@@ -172,8 +178,8 @@ public class SyntaticAnalyzer {
     }
 
     private void arithmeticExpression_line_nonTerminal() {
-        if (token.getLexeme().equals("+") || token.getLexeme().equals("-")) {
-            token = scanner.getNextToken();
+        if (currentToken.getLexeme().equals("+") || currentToken.getLexeme().equals("-")) {
+            currentToken = scanner.getNextToken();
             term_nonTerminal();
         }
     }
@@ -184,41 +190,41 @@ public class SyntaticAnalyzer {
     }
 
     private void term_line_nonTerminal() {
-        if (token.getLexeme().equals("*") || token.getLexeme().equals("/")) {
-            token = scanner.getNextToken();
+        if (currentToken.getLexeme().equals("*") || currentToken.getLexeme().equals("/")) {
+            currentToken = scanner.getNextToken();
             factor_terminal();
         }
     }
 
     private void factor_terminal() {
-        if (token != null && token.getLexeme().equals("(")) { 
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals("(")) { 
+            currentToken = scanner.getNextToken();
             arithmeticExpression_nonTerminal();
 
-            if (!token.getLexeme().equals(")")) {
-                throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t ')' is missing");
+            if (!currentToken.getLexeme().equals(")")) {
+                throw new RuntimeException(badSyntaxErrorMessage() + "\t ')' is missing");
             }            
-        } else if (token != null && (token.getType().equals(TokenTypes.IDENTIFIER.typeCode) || token.getType().equals(TokenTypes.REAL.typeCode) ||
-            token.getType().equals(TokenTypes.INTEGER.typeCode) || token.getType().equals(TokenTypes.CHAR.typeCode))) {
-            token = scanner.getNextToken();
+        } else if (currentToken != null && (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode) || currentToken.getType().equals(TokenTypes.REAL.typeCode) ||
+            currentToken.getType().equals(TokenTypes.INTEGER.typeCode) || currentToken.getType().equals(TokenTypes.CHAR.typeCode))) {
+            currentToken = scanner.getNextToken();
         }
     }
 
     private void declaration_nonTerminal() {
-        if (token != null && (token.getLexeme().equals("int") || token.getLexeme().equals("float") || token.getLexeme().equals("char")))
-                token = scanner.getNextToken();
+        if (currentToken != null && (currentToken.getLexeme().equals("int") || currentToken.getLexeme().equals("float") || currentToken.getLexeme().equals("char")))
+                currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t token should be a type");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be a type");
         
-        if (token != null && token.getType().equals(TokenTypes.IDENTIFIER.typeCode))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t token should be an identifier");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be an identifier");
         
-        if (token != null && token.getLexeme().equals(";"))
-            token = scanner.getNextToken();
+        if (currentToken != null && currentToken.getLexeme().equals(";"))
+            currentToken = scanner.getNextToken();
         else
-            throw new RuntimeException("ERROR on row " + scanner.getErrorRow() + " and column " + scanner.getErrorColumn() + " near " + token.getLexeme() + "\t ';' is missing");
+            throw new RuntimeException(badSyntaxErrorMessage() + "\t ';' is missing");
         
     }
 }
