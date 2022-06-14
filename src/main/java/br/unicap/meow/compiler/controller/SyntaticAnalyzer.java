@@ -30,7 +30,8 @@ public class SyntaticAnalyzer {
     private Token currentToken;
     private int currentScope = 0;
     List<Variable> variablesInCode = new ArrayList<Variable>();
-    private String currentType;
+    private String variableCurrentType;
+    private String valueCurrentType;
 
 
     public SyntaticAnalyzer(Compiler compiler) {
@@ -185,7 +186,7 @@ public class SyntaticAnalyzer {
 
         Variable declaredVariable = isVariableDeclared(variableName);
         if (declaredVariable != null) {
-            if (!declaredVariable.getType().equals(currentType)) {
+            if (!declaredVariable.getType().equals(valueCurrentType)) {
                 throw new RuntimeException(badSyntaxErrorMessage() + "\t type mismatch");
             }
         } else {
@@ -254,12 +255,12 @@ public class SyntaticAnalyzer {
                 if (currentToken.getType().equals(TokenTypes.IDENTIFIER.typeCode)) {
                     Variable declaredVariable = isVariableDeclared(currentToken.getLexeme());
                     if (declaredVariable != null) {
-                        currentType = declaredVariable.getType();
+                        valueCurrentType = declaredVariable.getType();
                     } else {
                         throw new RuntimeException(badSyntaxErrorMessage() + "\t variable '" + currentToken.getLexeme() + "' was not declared");
                     }
                 } else {
-                    currentType = currentToken.getType();
+                    valueCurrentType = currentToken.getType();
                 }
                 currentToken = scanner.getNextToken();
         }
@@ -282,7 +283,7 @@ public class SyntaticAnalyzer {
                         variableType = TokenTypes.CHAR.typeCode;
                 }
 
-            currentType = variableType;
+            variableCurrentType = variableType;
             currentToken = scanner.getNextToken();
         } else {
             throw new RuntimeException(badSyntaxErrorMessage() + "\t token should be a type");
