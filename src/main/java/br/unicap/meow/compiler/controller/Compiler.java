@@ -38,6 +38,7 @@ public class Compiler {
 
     private int rowCounter;
     private int columnCounter;
+    private int lexemeCharCounter;
 
     public Compiler(String path) {
         try {
@@ -52,11 +53,11 @@ public class Compiler {
         }  
     }
 
-    private boolean isEndOfFile() {
+    public boolean isEndOfFile() {
         return currentFileIndex > fileContent.length;
     }
 
-    private boolean hasNextChar() {
+    public boolean hasNextChar() {
         return currentFileIndex < fileContent.length;
     }
 
@@ -79,10 +80,19 @@ public class Compiler {
         columnCounter = 0;
     }
 
+    public int getErrorRow() {
+        return rowCounter;
+    }
+
+    public int getErrorColumn() {
+        return columnCounter - lexemeCharCounter;
+    }
+
     public Token getNextToken() {
         char currentCharacter = NULL_CHAR;
         int currentAutomatonState = 0;
         StringBuffer lexeme = new StringBuffer();
+        lexemeCharCounter = lexeme.length();
         boolean hasReadNewCharacter;
 
         while (!isEndOfFile()) {

@@ -20,6 +20,7 @@ package br.unicap.meow.compiler;
 
 import br.unicap.meow.compiler.model.Token;
 import br.unicap.meow.compiler.controller.Compiler;
+import br.unicap.meow.compiler.controller.SyntaticAnalyzer;
 import java.io.File;
 
 public class Main {
@@ -30,12 +31,9 @@ public class Main {
         String fileName = "meow-code.txt";
 
         
+        Compiler scanner = new Compiler(packagePath + fileName);
+        SyntaticAnalyzer parser = new SyntaticAnalyzer(scanner);
 
-        Token token = null;
-        Compiler compiler = new Compiler(packagePath + fileName);
-
-        while ((token = compiler.getNextToken()) != null) {
-            System.out.println(token);
-        }
+        parser.startingPoint_nonTerminal();
     }
 }
